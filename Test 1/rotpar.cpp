@@ -1,9 +1,16 @@
 /* Aluno: Ricardo Abreu de Oliveira
-*  Comando: g++ rotseq.cpp -o rotseq -Wall -fopenmp
+*  Comando: g++ rotpar.cpp -o rotpar -fopenmp
+*  Execucao: ./rotpar < entrada.in > saida.out
+*
+*  Paralelizacao ocorre na fase de expansao e 
+*  no arquivo componentesPar.h
+*  Obs: Problema com o obstaculo 14 9 55 da entrada2
 */
 
-#include "componentes.h"
+
+#include "componentesPar.h"
 using namespace std;
+
 
 void caminhaMatriz(int **M, int n, int m, int i, int j, posicao cel, tfila *fila){
 
@@ -23,12 +30,20 @@ void caminhaMatriz(int **M, int n, int m, int i, int j, posicao cel, tfila *fila
             // Se posicao atual eh diferente de obstaculo
             if ( M[cel.i][cel.j] != -1 ){
 
-                andaColuna(M, n, m, cel, fila);
-                andaLinha(M, n, m, cel, fila);
-                preencheVizinhos(M,  n,  m, &cel, fila);
+                #pragma omp parallel sections
+                {
+                    #pragma omp section
+                    andaColuna(M, n, m, cel, fila);
+                    
+                    #pragma omp section
+                    andaLinha(M, n, m, cel, fila);
+                    
+                    #pragma omp section
+                    preencheVizinhos(M,  n,  m, &cel, fila);
+                }
             }
 
-            else{
+            else{                
                 break;
             }
         }
@@ -43,12 +58,12 @@ int main (int argc, char *argv[]){
     int **M, n, m;
     tfila fila, caminho;
 
+  
     posicao cel, obstaculo, celulaInserida;
     double timeI, timeF, timeT;
     bool achou = false, valido;
-    int vizinhos[4] = {1, -1, 0, 0};  // Posicao i recebe vizinho[k]
-                                      // Posicao j recebe vizinho[3-k], assim verificando celulas vizinhas
-
+    int vizinhos[4] = {1, -1, 0, 0};   // Posicao i recebe vizinho[k]
+                                       // Posicao j recebe vizinho[3-k], assim verificando celulas vizinhas
 
     cin >> n>>m; // Dimen da matriz
     M = new int *[n];
@@ -84,8 +99,8 @@ int main (int argc, char *argv[]){
     }
 
     // Garantindo que nao vai comparar valores iguais
-    aki.i = -2;
-    aki.j = -2;
+    flag.i = -2;
+    flag.j = -2;
     
 
     iniciaFila(&fila);
@@ -93,25 +108,28 @@ int main (int argc, char *argv[]){
 
     M[Origem.i][Origem.j] = 0; 
 
-    timeI = omp_get_wtime();
+    timeI = omp_get_wtime();    // Inicio da contagem
+
     // Fase de expansao
     /****************************************************************/
+
     cel.i = Origem.i;
     cel.j = Origem.j;
     while(  fila.cabeca != NULL and not achou ){
         removeFila(&fila);
 
-        if ( aki.i == Destino.i and  aki.j == Destino.j){
+        if ( flag.i == Destino.i and  flag.j == Destino.j){
             achou = true;
             break;
         }
 
         else{
-
+            
             // Fazendo expansao sempre a partir da origem para garantir os niveis
             cel.i = Origem.i;
             cel.j = Origem.j;
             
+            #pragma omp parallel for
             for(int k = 0; k < 4; k++){   
                 valido = verifica(cel.i + vizinhos[k], cel.j + vizinhos[3-k], M, n, m );
                 
@@ -126,17 +144,16 @@ int main (int argc, char *argv[]){
                 }
 
                 else {
-            
                     caminhaMatriz(M, n, m,  vizinhos[k] ,  vizinhos[3-k], cel, &fila);
                 }
             }
-        }
-                        
+        }           
     }
 
     /*****************************************************************/
 
-    // Impressao da matriz
+
+    //Impressao da matriz
     // for (int i = 0; i < n; i++){
     //     for(int j = 0; j < m; j++){
     //         printf("%10d     ", M[i][j]);
@@ -146,7 +163,7 @@ int main (int argc, char *argv[]){
 
 
 
-    // Fase de backtraking
+    // Fase de backtrack
     /*******************************************************************/
     
     cel.i = Destino.i;
@@ -166,9 +183,12 @@ int main (int argc, char *argv[]){
 
     timeF = omp_get_wtime();
     timeT = timeF - timeI;
-    printf("\ntempo total--> %lf\n", timeT);
+    printf("\nTempo total--> %lf\n", timeT);
 
+
+    
     /*******************************************************************/
 
     return 0;
 }
+
