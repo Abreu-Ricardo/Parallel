@@ -9,7 +9,6 @@
 using namespace std;
 
 
-
 // Posicoes da origem
 struct posicao   
 {
@@ -43,7 +42,6 @@ void iniciaFila(tfila *fila){
     fila->cauda = NULL;
     return;
 }
-
 
 // Insere na cauda
 void insereFila(tfila *fila, posicao Origem){

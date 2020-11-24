@@ -144,7 +144,12 @@ int main (int argc, char *argv[]){
     //     cout<< endl;
     // }
 
+    iniciaFila(&caminho);
+    insereFila(&caminho, cel);
 
+    // Nao precisa desse laco
+    //while(cel.i != Origem.i && cel.j != Origem.j){
+        achaCaminho(M, n, m, &caminho, &cel, Origem);
 
     // Fase de backtraking
     /*******************************************************************/
